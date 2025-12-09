@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atlas Ops Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; background: #f7f7f7; }
+    h1 { color: #1f2937; }
+    section { background: #fff; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    code { background: #eee; padding: 2px 4px; border-radius: 4px; }
+    ul { padding-left: 1.2rem; }
+  </style>
+</head>
+<body>
+  <h1>Atlas Ops Copilot</h1>
+  <p>Backend health: <span id="health">checking...</span></p>
+
+  <section>
+    <h2>Sites</h2>
+    <ul id="sites"></ul>
+  </section>
+
+  <section>
+    <h2>Signals</h2>
+    <ul id="signals"></ul>
+  </section>
+
+  <section>
+    <h2>Runbooks</h2>
+    <ul id="runbooks"></ul>
+  </section>
+
+  <section>
+    <h2>Suggestions</h2>
+    <ul id="suggestions"></ul>
+  </section>
+
+<script>
+async function fetchJson(path) {
+  const res = await fetch(path);
+  if (!res.ok) throw new Error(`Request failed: ${path}`);
+  return res.json();
+}
+
+function renderList(el, items, formatter) {
+  el.innerHTML = "";
+  items.forEach(item => {
+    const li = document.createElement('li');
+    li.textContent = formatter(item);
+    el.appendChild(li);
+  });
+}
+
+(async () => {
+  try {
+    const health = await fetchJson('/api/health');
+    document.getElementById('health').textContent = health.status;
+  } catch (err) {
+    document.getElementById('health').textContent = 'unreachable';
+  }
+
+  try {
+    const sites = await fetchJson('/api/sites');
+    renderList(document.getElementById('sites'), sites.sites || [], s => `${s.name} (${s.host || 'n/a'})`);
+  } catch (err) {
+    document.getElementById('sites').textContent = 'No sites available';
+  }
+
+  try {
+    const signals = await fetchJson('/api/signals');
+    renderList(document.getElementById('signals'), signals.signals || [], s => `${s.name}: ${s.status}`);
+  } catch (err) {
+    document.getElementById('signals').textContent = 'No signals yet';
+  }
+
+  try {
+    const runbooks = await fetchJson('/api/runbooks');
+    renderList(document.getElementById('runbooks'), runbooks.runbooks || [], r => `${r.name} - ${r.description}`);
+  } catch (err) {
+    document.getElementById('runbooks').textContent = 'No runbooks available';
+  }
+
+  try {
+    const suggestions = await fetchJson('/api/suggestions');
+    renderList(document.getElementById('suggestions'), suggestions.suggestions || [], s => `${s.title}: ${s.body || ''}`);
+  } catch (err) {
+    document.getElementById('suggestions').textContent = 'No suggestions available';
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+# Copy this file to atlas_ops.yml and tailor to your workspace.
+project: atlas-platform
+environment: dev
+
+requirements:
+  - name: python
+    description: Verify that Python is available
+    check: python --version
+  - name: docker
+    description: Ensure Docker daemon is reachable
+    check: docker info
+
+# Define task sequences for your automation workflows.
+tasks:
+  bootstrap:
+    description: Install base dependencies
+    steps:
+      - run: python -m venv .venv
+      - run: .venv/bin/pip install -U pip
+      - run: .venv/bin/pip install -r requirements.txt
+  test:
+    description: Run the full test suite
+    steps:
+      - run: .venv/bin/python -m pytest
+  package:
+    description: Build a distributable archive
+    steps:
+      - run: python -m build
+  release:
+    description: Push an image to the registry
+    steps:
+      - run: make build-image
+      - run: make push-image
